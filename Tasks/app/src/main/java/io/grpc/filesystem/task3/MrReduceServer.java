@@ -39,7 +39,6 @@ public class MrReduceServer {
     }
 
     static class MrReduceServerImpl extends AssignJobGrpc.AssignJobImplBase {
-        MapReduce mr = new MapReduce();
 
          /* 
          * Insert your code here 

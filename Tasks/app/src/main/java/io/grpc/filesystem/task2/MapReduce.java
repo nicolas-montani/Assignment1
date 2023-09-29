@@ -5,23 +5,19 @@
 
 package io.grpc.filesystem.task2;
 
+import java.util.*;
 import java.util.stream.Collectors;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map.Entry;
-import java.util.Scanner;
-import java.util.Map;
-import java.util.Timer;
 
 import io.grpc.filesystem.task2.Mapper;
 
 public class MapReduce {
+
+    public MapReduce() throws IOException {
+    }
 
     public static String makeChunks(String inputFilePath) throws IOException {
         int count = 1;
@@ -54,6 +50,7 @@ public class MapReduce {
      * @param inputfilepath
      * @throws IOException
      */
+
     public static void map(String inputfilepath) throws IOException {
 
         /*
@@ -64,6 +61,55 @@ public class MapReduce {
          * Save the map output in a file named "map-chunk001", for example, in folder
          * path input/temp/map
          */
+
+
+        //open the file
+        File file = new File(inputfilepath);
+        Scanner sc = new Scanner(file);
+
+        //create a Stringlist to store the words and count should always be 1
+        List<String> map = new ArrayList<String>();
+
+        //read the file line by line
+        while (sc.hasNextLine()) {
+            String line = sc.nextLine();
+            //filter out punctuation
+            line = line.replaceAll("\\p{Punct}|^[a-zA-Z0-9]", "");
+            String[] words = line.split("\\s");
+            for (String word : words) {
+                // add the word and count to the map only if the words not equal to ""
+                if (!word.equals(""))
+                    map.add(word + ":1");
+            }
+        }
+
+
+        //close the scanner
+        sc.close();
+
+        // safe to file input/temp/map/map-chunk001.txt if it already exist it will be written input/temp/map/map-chunk002.txt
+
+        //create a file to store the map output
+        int num = 1;
+
+        // check if the file exist
+        File mapFile = new File("input/temp/map/map-chunk" + String.format("%03d", num) + ".txt");
+        while (mapFile.exists()) {
+            mapFile = new File("input/temp/map/map-chunk" + String.format("%03d", num) + ".txt");
+            num++;
+        }
+
+        //create a file writer
+        FileWriter writer = new FileWriter(mapFile);
+
+        //write the map output to the file
+        for (String string : map) {
+            writer.write(string + "\n");
+        }
+
+        //close the file writer
+        writer.close();
+
 
     }
 
@@ -81,7 +127,6 @@ public class MapReduce {
          * unique words with their counts as "the:64", for example.
          * Save the output of reduce function as output-task2.txt
          */
-
     }
 
     /**
