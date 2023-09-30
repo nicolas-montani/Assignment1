@@ -5,6 +5,7 @@
 
 package io.grpc.filesystem.task2;
 
+import java.sql.SQLOutput;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.io.*;
@@ -47,8 +48,8 @@ public class MapReduce {
     }
 
     /**
-     * @param inputfilepath
-     * @throws IOException
+     * @param inputfilepath Takes a text file as an input and returns counts of each
+     * @throws IOException throws Exception
      */
 
     public static void map(String inputfilepath) throws IOException {
@@ -63,55 +64,53 @@ public class MapReduce {
          */
 
 
-        //open the file
-        File file = new File(inputfilepath);
-        Scanner sc = new Scanner(file);
+        //select inputfile
+        File inputFile = new File(inputfilepath);
+
+        //select tempFile
+        String tempFolder = inputFile.getParentFile().getParent() + "/temp/map";
+        String tempFileName = "map-" + inputFile.getName();
+        File tempFile = new File(tempFolder, tempFileName);
+
+        //bufferReader for both files
+
+        BufferedReader brInput = new BufferedReader(new FileReader(inputFile));
+        BufferedWriter bwTemp = new BufferedWriter(new FileWriter(tempFile));
 
         //create a Stringlist to store the words and count should always be 1
         List<String> map = new ArrayList<String>();
 
-        //read the file line by line
-        while (sc.hasNextLine()) {
-            String line = sc.nextLine();
-            //filter out punctuation
-            line = line.replaceAll("\\p{Punct}|^[a-zA-Z0-9]", "");
-            String[] words = line.split("\\s");
+            //print each line
+        String line;
+        while ((line = brInput.readLine()) != null) {
+            //split line in words
+            String words[] = line.split("\\s+");
+
             for (String word : words) {
-                // add the word and count to the map only if the words not equal to ""
-                if (!word.equals(""))
+                word = word.replaceAll("\\p{Punct}", "").toLowerCase();
+
+                //add to list
+                if (word.matches("^[a-zA-Z0-9]*$") && !word.equals("")) {
                     map.add(word + ":1");
+                }
+
+
             }
         }
 
+        // add each word to bufferWriter
 
-        //close the scanner
-        sc.close();
-
-        // safe to file input/temp/map/map-chunk001.txt if it already exist it will be written input/temp/map/map-chunk002.txt
-
-        //create a file to store the map output
-        int num = 1;
-
-        // check if the file exist
-        File mapFile = new File("input/temp/map/map-chunk" + String.format("%03d", num) + ".txt");
-        while (mapFile.exists()) {
-            mapFile = new File("input/temp/map/map-chunk" + String.format("%03d", num) + ".txt");
-            num++;
+        for (String word : map) {
+            bwTemp.write(word + "\n");
         }
 
-        //create a file writer
-        FileWriter writer = new FileWriter(mapFile);
-
-        //write the map output to the file
-        for (String string : map) {
-            writer.write(string + "\n");
-        }
-
-        //close the file writer
-        writer.close();
+        //close the bufferReader and bufferWriter
+        brInput.close();
+        bwTemp.close();
 
 
     }
+
 
     /**
      * @param inputfilepath
@@ -127,6 +126,52 @@ public class MapReduce {
          * unique words with their counts as "the:64", for example.
          * Save the output of reduce function as output-task2.txt
          */
+
+        //select each inputfile that end with txt in inputfilepath + "/map"
+        File inputFolder = new File(inputfilepath + "/map");
+        File[] inputFiles = inputFolder.listFiles((dir, name) -> name.endsWith(".txt"));
+
+        //select outputfile
+        File outputFile = new File(outputfilepath);
+
+
+        //create a map to store the words and count
+        HashMap<String, Integer> reduce = new HashMap<>();
+
+        //read each inputfile
+        for (File inputFile : inputFiles) {
+            BufferedReader brInput = new BufferedReader(new FileReader(inputFile));
+
+            //read each line
+            String line;
+            while ((line = brInput.readLine()) != null) {
+                //split line in words
+                String words[] = line.split(":");
+
+                //add to map
+                if (reduce.containsKey(words[0])) {
+                    reduce.put(words[0], reduce.get(words[0]) + Integer.parseInt(words[1]));
+                } else {
+                    reduce.put(words[0], Integer.parseInt(words[1]));
+                }
+            }
+            brInput.close();
+        }
+
+        // sort hashmap by integer
+        reduce = reduce.entrySet().stream().sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
+
+        //write to outbutfile
+
+        BufferedWriter bwOutput = new BufferedWriter(new FileWriter(outputFile));
+
+        for (Map.Entry<String, Integer> entry : reduce.entrySet()) {
+            bwOutput.write(entry.getKey() + ":" + entry.getValue() + "\n");
+        }
+
+        bwOutput.close();
+
     }
 
     /**
