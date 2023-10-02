@@ -39,8 +39,56 @@ public class MrClient {
       * Remember that the map function uses client stream
       * Update the job status every time the map function finishes mapping a chunk, it is useful for calling reduce function once all of the chunks are processed by the map function
       */
+      // create channel, asyncstud and contdownlatch
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(ip, portnumber).usePlaintext().build();
+        AssignJobGrpc.AssignJobStub stub = AssignJobGrpc.newStub(channel);
+        CountDownLatch latch = new CountDownLatch(1);
 
-   }
+       // create a response observer to handle responses from the server
+        StreamObserver<MapOutput> responseObserver = new StreamObserver<>() {
+            @Override
+            public void onNext(MapOutput value) {
+                System.out.println("Received response from server");
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("Error");
+                latch.countDown();
+            }
+
+            @Override
+            public void onCompleted() {
+                System.out.println("Completed");
+                latch.countDown();
+            }
+        };
+
+        // create a request observer to send requests to the server
+        StreamObserver<MapInput> requestObserver = stub.map(responseObserver);
+
+        try {
+           // iterate through the job status map
+           for (Map.Entry<String, Integer> entry : jobStatus.entrySet()) {
+               String chunkPath = entry.getKey(); // get the chunk path
+               MapInput mapInput = MapInput.newBuilder().setInputfilepath(chunkPath).setOutputfilepath(outputfilepath).build();
+               requestObserver.onNext(mapInput); // sending the map input to the server
+                }
+            } catch (RuntimeException e) {
+                requestObserver.onError(e); // handle the error
+                throw  e;
+        }
+        // Mark the end of requests
+        requestObserver.onCompleted();
+
+        // Receiving happens asynchronously
+        if (!latch.await(1, TimeUnit.MINUTES)) {
+            System.out.println("map can not finish within 1 minutes");
+        }
+        channel.shutdown();
+        channel.awaitTermination(1, TimeUnit.MINUTES);
+    }
+
 
    public int requestReduce(String ip, Integer portnumber, String inputfilepath, String outputfilepath) {
        
