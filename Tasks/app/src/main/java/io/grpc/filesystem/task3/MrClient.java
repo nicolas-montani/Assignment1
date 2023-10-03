@@ -39,10 +39,12 @@ public class MrClient {
       * Remember that the map function uses client stream
       * Update the job status every time the map function finishes mapping a chunk, it is useful for calling reduce function once all of the chunks are processed by the map function
       */
-      // create channel, asyncstud and contdownlatch
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(ip, portnumber).usePlaintext().build();
-        AssignJobGrpc.AssignJobStub stub = AssignJobGrpc.newStub(channel);
 
+      // create channel, asyncstud
+       ManagedChannel channel = ManagedChannelBuilder.forAddress(ip, portnumber).usePlaintext().build();
+       AssignJobGrpc.AssignJobStub stub = AssignJobGrpc.newStub(channel);
+
+       System.out.println("Channel Initialised");
        // create a response observer to handle responses from the server
        StreamObserver<MapInput> requestObserver = stub.map(new StreamObserver<MapOutput>() {
            @Override
@@ -55,7 +57,6 @@ public class MrClient {
                // Update the job status for this chunk
                jobStatus.put(outputfilepath, jobStatusValue);
            }
-
             @Override
             public void onError(Throwable t) {
                 System.err.println("Error: " + t.getMessage());
@@ -63,21 +64,27 @@ public class MrClient {
 
             @Override
             public void onCompleted() {
-                System.out.println("Completed");
                 channel.shutdown();
+                System.out.println("Map Completed");
             }
 
         });
+
+       File inputFile = new File(inputfilepath);
 
        // Create a MapInput message and send it to the server
        MapInput mapInput = MapInput.newBuilder()
                .setIp(ip)
                .setPort(portnumber)
-               .setInputfilepath(inputfilepath)
+               .setInputfilepath(inputFile.getAbsolutePath())
                .setOutputfilepath(outputfilepath)
                .build();
 
+       System.out.println(mapInput);
+
        requestObserver.onNext(mapInput);
+       requestObserver.onCompleted();
+
    }
 
 

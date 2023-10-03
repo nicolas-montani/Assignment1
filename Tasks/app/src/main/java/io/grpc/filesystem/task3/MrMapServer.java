@@ -47,13 +47,12 @@ public class MrMapServer {
          * Look through the available functions and definition in this Grpc file to complete the task
          */
 
-        //MapReduce mapReduce = new MapReduce();
-
+        MapReduce mapReduce = new MapReduce();
 
         @Override
         public StreamObserver<MapInput> map(StreamObserver<MapOutput> responseObserver) {
 
-            return new StreamObserver<MapInput>() {
+            return new StreamObserver<MapInput> () {
                 @Override
                 public void onNext(MapInput request){
                     System.out.println("Proccessed File: " + request.getInputfilepath());
