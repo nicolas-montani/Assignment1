@@ -71,27 +71,17 @@ public class MrClient {
 
         });
 
-       File inputFile = new File(inputfilepath);
-       File inputFolder = new File(inputFile.getParentFile() + "/temp");
-       File[] inputFiles = inputFolder.listFiles((dir, name) -> name.endsWith(".txt"));
-
-       for (File inputfile : inputFiles) {
 
 
-           MapInput mapInput = MapInput.newBuilder()
+       MapInput mapInput = MapInput.newBuilder()
                    .setIp(ip)
                    .setPort(portnumber)
-                   .setInputfilepath(inputfile.getAbsolutePath())
+                   .setInputfilepath(inputfilepath)
                    .setOutputfilepath(outputfilepath)
                    .build();
 
-           System.out.println(inputfile);
-           requestObserver.onNext(mapInput);
-
-       }
-
+       requestObserver.onNext(mapInput);
        requestObserver.onCompleted();
-
 
        channel.awaitTermination(5, TimeUnit.SECONDS);
 
@@ -166,12 +156,12 @@ public class MrClient {
             if (f.isFile()) {
                noofjobs += 1;
                client.jobStatus.put(f.getPath(), 1);
-
+                System.out.println(f);
+                client.requestMap(ip, mapport, f.getAbsolutePath(), outputfilepath);
             }
-
          }
       }
-      client.requestMap(ip, mapport, inputfilepath, outputfilepath);
+
 
       Set<Integer> values = new HashSet<Integer>(client.jobStatus.values());
       if (values.size() == 1 && client.jobStatus.containsValue(2)) {
