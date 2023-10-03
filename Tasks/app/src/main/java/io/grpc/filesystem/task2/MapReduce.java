@@ -17,9 +17,6 @@ import io.grpc.filesystem.task2.Mapper;
 
 public class MapReduce {
 
-    public MapReduce() throws IOException {
-    }
-
     public static String makeChunks(String inputFilePath) throws IOException {
         int count = 1;
         int size = 500;
