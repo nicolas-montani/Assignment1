@@ -42,52 +42,45 @@ public class MrClient {
       // create channel, asyncstud and contdownlatch
         ManagedChannel channel = ManagedChannelBuilder.forAddress(ip, portnumber).usePlaintext().build();
         AssignJobGrpc.AssignJobStub stub = AssignJobGrpc.newStub(channel);
-        CountDownLatch latch = new CountDownLatch(1);
 
        // create a response observer to handle responses from the server
-        StreamObserver<MapOutput> responseObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(MapOutput value) {
-                System.out.println("Received response from server");
-            }
+       StreamObserver<MapInput> requestObserver = stub.map(new StreamObserver<MapOutput>() {
+           @Override
+           public void onNext(MapOutput mapOutput) {
+
+               System.out.println("Received response from server");
+
+               // Handle the response from the server
+               int jobStatusValue = mapOutput.getJobstatus();
+               // Update the job status for this chunk
+               jobStatus.put(outputfilepath, jobStatusValue);
+           }
 
             @Override
             public void onError(Throwable t) {
-                System.out.println("Error");
-                latch.countDown();
+                System.err.println("Error: " + t.getMessage());
             }
 
             @Override
             public void onCompleted() {
                 System.out.println("Completed");
-                latch.countDown();
+                channel.shutdown();
             }
-        };
 
-        // create a request observer to send requests to the server
-        StreamObserver<MapInput> requestObserver = stub.map(responseObserver);
+        });
 
-        try {
-           // iterate through the job status map
-           for (Map.Entry<String, Integer> entry : jobStatus.entrySet()) {
-               String chunkPath = entry.getKey(); // get the chunk path
-               MapInput mapInput = MapInput.newBuilder().setInputfilepath(chunkPath).setOutputfilepath(outputfilepath).build();
-               requestObserver.onNext(mapInput); // sending the map input to the server
-                }
-            } catch (RuntimeException e) {
-                requestObserver.onError(e); // handle the error
-                throw  e;
-        }
-        // Mark the end of requests
-        requestObserver.onCompleted();
+       // Create a MapInput message and send it to the server
+       MapInput mapInput = MapInput.newBuilder()
+               .setIp(ip)
+               .setPort(portnumber)
+               .setInputfilepath(inputfilepath)
+               .setOutputfilepath(outputfilepath)
+               .build();
 
-        // Receiving happens asynchronously
-        if (!latch.await(1, TimeUnit.MINUTES)) {
-            System.out.println("map can not finish within 1 minutes");
-        }
-        channel.shutdown();
-        channel.awaitTermination(1, TimeUnit.MINUTES);
-    }
+       requestObserver.onNext(mapInput);
+   }
+
+
 
 
    public int requestReduce(String ip, Integer portnumber, String inputfilepath, String outputfilepath) {
@@ -98,8 +91,39 @@ public class MrClient {
       * Remember that the map function uses unary call
       */
 
-      return 0; // update this return statement
+       // Create a gRPC channel to connect to the server
+       ManagedChannel channel = ManagedChannelBuilder.forAddress(ip, portnumber).usePlaintext().build();
+
+       // Create a stub for the AssignJob service
+       AssignJobGrpc.AssignJobBlockingStub blockingStub = AssignJobGrpc.newBlockingStub(channel);
+
+       // Create a ReduceInput message to send to the server
+       ReduceInput reduceInput = ReduceInput.newBuilder()
+               .setIp(ip)
+               .setPort(portnumber)
+               .setInputfilepath(inputfilepath)
+               .setOutputfilepath(outputfilepath)
+               .build();
+
+       try {
+           // Call the reduce function on the server and receive a ReduceOutput response
+           ReduceOutput reduceOutput = blockingStub.reduce(reduceInput);
+
+           // Retrieve the job status from the response
+           int jobStatus = reduceOutput.getJobstatus();
+
+           // Close the channel when done
+           channel.shutdown();
+
+           // Return the job status
+           return jobStatus;
+       } catch(Exception e) {
+           // Handle errors, such as gRPC exceptions
+           System.err.println("Error in reduce function: " + e.getMessage());
+           return -1; // Return a negative value to indicate an error
+       }
    }
+
    public static void main(String[] args) throws Exception {// update main function if required
 
       String ip = args[0];
