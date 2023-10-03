@@ -58,7 +58,7 @@ public class MrMapServer {
 
                     System.out.println("Proccessed File: " + request.getInputfilepath());
                     try {
-                        MapReduce.map(request.getInputfilepath());
+                        mapReduce.map(request.getInputfilepath());
 
                         MapOutput response = MapOutput.newBuilder()
                                 .setJobstatus(2)

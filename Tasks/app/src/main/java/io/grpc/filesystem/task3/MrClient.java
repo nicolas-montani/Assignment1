@@ -60,7 +60,7 @@ public class MrClient {
            }
             @Override
             public void onError(Throwable t) {
-                System.err.println("Error: " + t.getMessage());
+                System.err.println("Clientside Error: " + t.getMessage());
             }
 
             @Override
@@ -85,14 +85,14 @@ public class MrClient {
                    .setOutputfilepath(outputfilepath)
                    .build();
 
-           System.out.println(mapInput);
-
-
+           System.out.println(inputfile);
            requestObserver.onNext(mapInput);
+
        }
 
-
        requestObserver.onCompleted();
+
+
        channel.awaitTermination(5, TimeUnit.SECONDS);
 
 
