@@ -40,23 +40,23 @@ public class MrClient {
       * Remember that the map function uses client stream
       * Update the job status every time the map function finishes mapping a chunk, it is useful for calling reduce function once all of the chunks are processed by the map function
       */
+       System.out.println(inputfilepath);
 
       // create channel, asyncstud
        ManagedChannel channel = ManagedChannelBuilder.forAddress(ip, portnumber).usePlaintext().build();
        AssignJobGrpc.AssignJobStub stub = AssignJobGrpc.newStub(channel);
 
-       System.out.println("Channel Initialised");
+
        // create a response observer to handle responses from the server
        StreamObserver<MapInput> requestObserver = stub.map(new StreamObserver<MapOutput>() {
            @Override
            public void onNext(MapOutput mapOutput) {
 
-               System.out.println("Received response from server");
-
                // Handle the response from the server
                int jobStatusValue = mapOutput.getJobstatus();
                // Update the job status for this chunk
-               jobStatus.put(outputfilepath, jobStatusValue);
+               jobStatus.put(inputfilepath, jobStatusValue);
+
            }
             @Override
             public void onError(Throwable t) {
@@ -101,6 +101,8 @@ public class MrClient {
       * Create a stub for calling reduce function from the server
       * Remember that the map function uses unary call
       */
+       System.out.println("reduce function is executed");
+       System.out.println(inputfilepath);
 
        // Create a gRPC channel to connect to the server
        ManagedChannel channel = ManagedChannelBuilder.forAddress(ip, portnumber).usePlaintext().build();
@@ -120,20 +122,15 @@ public class MrClient {
            // Call the reduce function on the server and receive a ReduceOutput response
            ReduceOutput reduceOutput = blockingStub.reduce(reduceInput);
 
-           // Retrieve the job status from the response
-           int jobStatus = reduceOutput.getJobstatus();
-
-           // Close the channel when done
-           channel.shutdown();
-
            // Return the job status
-           return jobStatus;
+           return 2;
        } catch(Exception e) {
            // Handle errors, such as gRPC exceptions
            System.err.println("Error in reduce function: " + e.getMessage());
            return -1; // Return a negative value to indicate an error
        }
    }
+
 
    public static void main(String[] args) throws Exception {// update main function if required
 
@@ -156,16 +153,15 @@ public class MrClient {
             if (f.isFile()) {
                noofjobs += 1;
                client.jobStatus.put(f.getPath(), 1);
-                System.out.println(f);
-                client.requestMap(ip, mapport, f.getAbsolutePath(), outputfilepath);
+                client.requestMap(ip, mapport, f.getPath(), outputfilepath);
             }
          }
       }
 
 
       Set<Integer> values = new HashSet<Integer>(client.jobStatus.values());
-      if (values.size() == 1 && client.jobStatus.containsValue(2)) {
 
+      if (values.size() == 1 && client.jobStatus.containsValue(2)) {
          response = client.requestReduce(ip, reduceport, chunkpath + "/map", outputfilepath);
          if (response == 2) {
 
