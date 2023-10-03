@@ -63,6 +63,7 @@ public class MapReduce {
          * path input/temp/map
          */
 
+        System.out.println("mapping... " + inputfilepath);
 
         //select inputfile
         File inputFile = new File(inputfilepath);
@@ -77,36 +78,27 @@ public class MapReduce {
         BufferedReader brInput = new BufferedReader(new FileReader(inputFile));
         BufferedWriter bwTemp = new BufferedWriter(new FileWriter(tempFile));
 
-        //create a Stringlist to store the words and count should always be 1
-        List<String> map = new ArrayList<String>();
 
-            //print each line
+        //print each line
         String line;
         while ((line = brInput.readLine()) != null) {
             //split line in words
+            line = line.replaceAll("\\p{Punct}", "").toLowerCase().trim();
             String words[] = line.split("\\s+");
 
             for (String word : words) {
-                word = word.replaceAll("\\p{Punct}", "").toLowerCase();
-
                 //add to list
                 if (word.matches("^[a-zA-Z0-9]*$") && !word.equals("")) {
-                    map.add(word + ":1");
+                    bwTemp.write(word + ":1" + "\n");
                 }
-
-
             }
-        }
-
-        // add each word to bufferWriter
-
-        for (String word : map) {
-            bwTemp.write(word + "\n");
         }
 
         //close the bufferReader and bufferWriter
         brInput.close();
         bwTemp.close();
+
+        System.out.println("chunk mapped and saved to: " + tempFileName);
 
 
     }
@@ -127,6 +119,8 @@ public class MapReduce {
          * Save the output of reduce function as output-task2.txt
          */
 
+        System.out.println("reducing...");
+
         //select each inputfile that end with txt in inputfilepath + "/map"
         File inputFolder = new File(inputfilepath + "/map");
         File[] inputFiles = inputFolder.listFiles((dir, name) -> name.endsWith(".txt"));
@@ -134,43 +128,49 @@ public class MapReduce {
         //select outputfile
         File outputFile = new File(outputfilepath);
 
+        //List
+        ArrayList<String> wordsList = new ArrayList<>();
+        Map<String, Integer> wordFrequencies = new HashMap<>();
 
-        //create a map to store the words and count
-        HashMap<String, Integer> reduce = new HashMap<>();
+        //sebcode
+        BufferedWriter brOutput = new BufferedWriter(new FileWriter(outputfilepath));
 
-        //read each inputfile
-        for (File inputFile : inputFiles) {
-            BufferedReader brInput = new BufferedReader(new FileReader(inputFile));
 
-            //read each line
+        //read all chunk-map files and add words into wordsList
+        for (File file : inputFiles) {
+
+            BufferedReader brInput = new BufferedReader(new FileReader(file));
+
             String line;
             while ((line = brInput.readLine()) != null) {
-                //split line in words
-                String words[] = line.split(":");
-
-                //add to map
-                if (reduce.containsKey(words[0])) {
-                    reduce.put(words[0], reduce.get(words[0]) + Integer.parseInt(words[1]));
-                } else {
-                    reduce.put(words[0], Integer.parseInt(words[1]));
-                }
+                String[] parts = line.split(":");
+                String word = parts[0];
+                wordsList.add(word);
             }
+
             brInput.close();
         }
 
-        // sort hashmap by integer
-        reduce = reduce.entrySet().stream().sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
-
-        //write to outbutfile
-
-        BufferedWriter bwOutput = new BufferedWriter(new FileWriter(outputFile));
-
-        for (Map.Entry<String, Integer> entry : reduce.entrySet()) {
-            bwOutput.write(entry.getKey() + ":" + entry.getValue() + "\n");
+        //Count words
+        for (String word : wordsList) {
+            if (wordFrequencies.containsKey(word)) {
+                wordFrequencies.put(word, wordFrequencies.get(word) + 1);
+            } else {
+                wordFrequencies.put(word, 1);
+            }
         }
 
-        bwOutput.close();
+        List<Entry<String, Integer>> sortedWordFrequencies = new ArrayList<>(wordFrequencies.entrySet());
+        sortedWordFrequencies.sort(Entry.<String, Integer>comparingByValue().reversed());
+
+        //write each word with inital frequency 1 to textfile in output folder
+        for (Entry<String, Integer> entry : sortedWordFrequencies) {
+            brOutput.write(entry.getKey() + ":" + entry.getValue() + "\n");
+        }
+
+        brOutput.close();
+
+        System.out.println("Chunks reduced and saved to: " + outputfilepath);
 
     }
 
