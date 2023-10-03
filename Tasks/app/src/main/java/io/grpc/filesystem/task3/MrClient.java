@@ -3,7 +3,7 @@
 */
 
 package io.grpc.filesystem.task3;
-
+import java.io.File;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.nio.file.Files;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -71,12 +72,19 @@ public class MrClient {
         });
 
        File inputFile = new File(inputfilepath);
+       String inputFolder = inputFile.getParentFile() + "/temp/map";
+
+
+       for (File file : inputFiles) {
+           System.out.println(file);
+       }
+
 
        // Create a MapInput message and send it to the server
        MapInput mapInput = MapInput.newBuilder()
                .setIp(ip)
                .setPort(portnumber)
-               .setInputfilepath(inputFile.getAbsolutePath())
+               .setInputfilepath(inputfilepath)
                .setOutputfilepath(outputfilepath)
                .build();
 

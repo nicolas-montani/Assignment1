@@ -83,7 +83,7 @@ public class MrMapServer {
                 }
                 @Override
                 public void onCompleted() {
-                    System.out.println("test");
+                    System.out.println("Map Complete");
                     responseObserver.onCompleted();
                 }
 
