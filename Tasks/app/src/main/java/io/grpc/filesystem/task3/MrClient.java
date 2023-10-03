@@ -83,8 +83,10 @@ public class MrClient {
        System.out.println(mapInput);
 
        requestObserver.onNext(mapInput);
+
        requestObserver.onCompleted();
 
+       channel.awaitTermination(5, TimeUnit.SECONDS);
    }
 
 

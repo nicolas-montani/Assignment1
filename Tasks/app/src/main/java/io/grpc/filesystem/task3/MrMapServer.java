@@ -55,6 +55,7 @@ public class MrMapServer {
             return new StreamObserver<MapInput> () {
                 @Override
                 public void onNext(MapInput request){
+
                     System.out.println("Proccessed File: " + request.getInputfilepath());
                     try {
                         MapReduce.map(request.getInputfilepath());
@@ -82,6 +83,7 @@ public class MrMapServer {
                 }
                 @Override
                 public void onCompleted() {
+                    System.out.println("test");
                     responseObserver.onCompleted();
                 }
 
