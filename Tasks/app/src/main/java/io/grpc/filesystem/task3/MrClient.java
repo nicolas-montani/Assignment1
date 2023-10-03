@@ -72,29 +72,33 @@ public class MrClient {
         });
 
        File inputFile = new File(inputfilepath);
-       String inputFolder = inputFile.getParentFile() + "/temp/map";
+       File inputFolder = new File(inputFile.getParentFile() + "/temp");
+       File[] inputFiles = inputFolder.listFiles((dir, name) -> name.endsWith(".txt"));
+
+       for (File inputfile : inputFiles) {
 
 
-       for (File file : inputFiles) {
-           System.out.println(file);
+           MapInput mapInput = MapInput.newBuilder()
+                   .setIp(ip)
+                   .setPort(portnumber)
+                   .setInputfilepath(inputfile.getAbsolutePath())
+                   .setOutputfilepath(outputfilepath)
+                   .build();
+
+           System.out.println(mapInput);
+
+
+           requestObserver.onNext(mapInput);
        }
 
 
-       // Create a MapInput message and send it to the server
-       MapInput mapInput = MapInput.newBuilder()
-               .setIp(ip)
-               .setPort(portnumber)
-               .setInputfilepath(inputfilepath)
-               .setOutputfilepath(outputfilepath)
-               .build();
-
-       System.out.println(mapInput);
-
-       requestObserver.onNext(mapInput);
-
        requestObserver.onCompleted();
-
        channel.awaitTermination(5, TimeUnit.SECONDS);
+
+
+
+       // Create a MapInput message and send it to the server
+
    }
 
 
