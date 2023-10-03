@@ -123,7 +123,9 @@ public class MrClient {
            ReduceOutput reduceOutput = blockingStub.reduce(reduceInput);
 
            // Return the job status
-           return 2;
+           int jobStatus = reduceOutput.getJobstatus();
+
+           return jobStatus;
        } catch(Exception e) {
            // Handle errors, such as gRPC exceptions
            System.err.println("Error in reduce function: " + e.getMessage());
@@ -162,7 +164,7 @@ public class MrClient {
       Set<Integer> values = new HashSet<Integer>(client.jobStatus.values());
 
       if (values.size() == 1 && client.jobStatus.containsValue(2)) {
-         response = client.requestReduce(ip, reduceport, chunkpath + "/map", outputfilepath);
+         response = client.requestReduce(ip, reduceport, chunkpath, outputfilepath);
          if (response == 2) {
 
             System.out.println("Reduce task completed!");

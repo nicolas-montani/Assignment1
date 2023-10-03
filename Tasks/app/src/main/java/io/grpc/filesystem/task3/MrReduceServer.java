@@ -52,21 +52,29 @@ public class MrReduceServer {
 
         @Override
         public void reduce(ReduceInput request, StreamObserver<ReduceOutput> responseObserver) {
-            try {
+            if (request == null || request.getInputfilepath().isEmpty()) {
+                responseObserver.onError(new IllegalArgumentException("Request or FileName is invalid")); // handle invalid file
+                return;
+            }
 
-                // Implement the logic for the reduce function here
-                // You will receive a ReduceInput request from the client
-                mapReduce.reduce(request.getInputfilepath(), request.getOutputfilepath());
-                // Perform the reduce task
+            // extract the input and output file names from the request
+            String input = request.getInputfilepath();
+            String output = request.getOutputfilepath();
+
+            try {
+                //perform reduce task
+                mapReduce.reduce(input, output);
 
                 // Create a ReduceOutput response with the job status
-                ReduceOutput response = ReduceOutput.newBuilder()
+                ReduceOutput response = ReduceOutput
+                        .newBuilder()
                         .setJobstatus(2)
                         .build();
 
                 // Send the response back to the client
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
+
             } catch (Exception e) {
                 // Handle any exceptions that may occur during the reduce operation
                 System.err.println("Error during reduce operation: " + e.getMessage());

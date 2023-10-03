@@ -118,9 +118,16 @@ public class MapReduce {
 
         System.out.println("reducing...");
 
+        System.out.println(inputfilepath);
+        System.out.println(outputfilepath);
+
         //select each inputfile that end with txt in inputfilepath + "/map"
         File inputFolder = new File(inputfilepath + "/map");
         File[] inputFiles = inputFolder.listFiles((dir, name) -> name.endsWith(".txt"));
+
+        for (File file : inputFiles){
+            System.out.println(file.getPath());
+        }
 
         //select outputfile
         File outputFile = new File(outputfilepath);
